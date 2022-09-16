@@ -75,4 +75,13 @@ export class UserService {
       bossRaidHistory,
     };
   }
+
+  async findById(id: number): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`User (id: ${id}) not found.`);
+    }
+
+    return user;
+  }
 }

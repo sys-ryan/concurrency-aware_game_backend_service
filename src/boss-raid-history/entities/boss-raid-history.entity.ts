@@ -24,14 +24,15 @@ export class BossRaidHistory {
     name: 'enter_time',
     comment: '해당 컬럼은 유저가 보스레이드를 시작한 시간을 나타냅니다.. ',
   })
-  enterTime: number;
+  enterTime: Date;
 
   @Column({
     type: 'timestamp',
     name: 'end_time',
+    default: null,
     comment: '해당 컬럼은 유저가 보스레이드를 종료한 시간을 나타냅니다. ',
   })
-  endTime: number;
+  endTime: Date;
 
   @Column({
     type: 'int',
