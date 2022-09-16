@@ -1,4 +1,12 @@
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  CACHE_MANAGER,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
 import { UserService } from 'src/user/user.service';
@@ -9,9 +17,20 @@ import { EnterBossRaidDto } from './dto/enter-boss-raid.dto';
 import { UpdateBossRaidHistoryDto } from './dto/update-boss-raid-history.dto';
 import { BossRaidAvailability } from './entities/boss-raid-availability.entity';
 import { BossRaidHistory } from './entities/boss-raid-history.entity';
+import { HttpService } from '@nestjs/axios';
+import { endWith, lastValueFrom } from 'rxjs';
+
+export interface Level {
+  level: number;
+  score: number;
+}
+export interface BosRaidsStaticData {
+  bossRaidLimitSeconds: number;
+  levels: Level[];
+}
 
 @Injectable()
-export class BossRaidHistoryService {
+export class BossRaidHistoryService implements OnModuleInit {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     @InjectRepository(BossRaidHistory)
@@ -20,54 +39,65 @@ export class BossRaidHistoryService {
     private bossRaidAvailabilityRepository: Repository<BossRaidAvailability>,
     private dataSource: DataSource,
     private userService: UserService,
+    private httpService: HttpService,
   ) {}
+
+  // lifecycle hook을 사용하여 service가 생성될 때, Boss Raid Static Data를 fecth하여 Redis에 저장
+  async onModuleInit() {
+    const url = `https://dmpilf5svl7rv.cloudfront.net/assignment/backend/bossRaidData.json`;
+
+    try {
+      const response$ = this.httpService.get(url);
+      const data = (await lastValueFrom(response$)).data;
+      const bossRaidsStaticData = data.bossRaids[0];
+
+      await this.cacheManager.set('bossRaidsStaticData', bossRaidsStaticData);
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to fetch BossRaid Static Data.',
+      );
+    }
+  }
 
   create(createBossRaidHistoryDto: CreateBossRaidHistoryDto) {
     return 'This action adds a new bossRaidHistory';
   }
 
   async getBossRaidStatus() {
-    let response;
-
     const bossRaidAvailability = (
       await this.bossRaidAvailabilityRepository.find()
     )[0];
 
     if (!bossRaidAvailability) {
       // 아무도 보스레이드를 시작한 기록이 없다면 시작 가능합니다.
-      response = {
+      return {
         canEnter: true,
       };
-    } else {
-      const {
-        userId: enteredUserId,
-        canEnter,
-        enteredAt: lastEnterTime,
-      } = bossRaidAvailability;
-
-      const { nextAvailableEnterTime, currentTime } =
-        this.getTimeInfo(lastEnterTime);
-
-      // 입장 불가능
-      const isGameNotFinished =
-        canEnter === false || currentTime < nextAvailableEnterTime;
-
-      if (isGameNotFinished) {
-        response = {
-          canEnter: false,
-          enteredUserId,
-        };
-      } else {
-        //입장 가능
-        await this.cacheManager.set('canEnter', true);
-
-        response = {
-          canEnter: true,
-        };
-      }
     }
 
-    return response;
+    const {
+      userId: enteredUserId,
+      canEnter,
+      enteredAt: lastEnterTime,
+    } = bossRaidAvailability;
+
+    const { nextAvailableEnterTime, currentTime } =
+      this.getTimeInfo(lastEnterTime);
+
+    // 입장 불가능
+    const isAvailable = canEnter || currentTime > nextAvailableEnterTime;
+    // const isGameNotFinished =
+    //   canEnter === false || currentTime < nextAvailableEnterTime;
+    if (isAvailable) {
+      return {
+        canEnter: true,
+      };
+    }
+
+    return {
+      canEnter: false,
+      enteredUserId,
+    };
   }
 
   async enterBossRaid(enterBossRaidDto: EnterBossRaidDto) {
@@ -79,9 +109,6 @@ export class BossRaidHistoryService {
     let bossRaidAvailability = (
       await this.bossRaidAvailabilityRepository.find()
     )[0];
-
-    console.log('bossRaidAvailability', bossRaidAvailability);
-    console.log(user);
 
     let canEnter: boolean;
     let isAvailable: boolean;
@@ -95,8 +122,6 @@ export class BossRaidHistoryService {
       });
       await this.bossRaidAvailabilityRepository.save(bossRaidAvailability);
       userId = user.id;
-      console.log('!bossRaidAvailability');
-      console.log(userId);
       isAvailable = true;
     } else {
       const {
@@ -156,7 +181,79 @@ export class BossRaidHistoryService {
     };
   }
 
-  async endBossRaid(endBossRaidDto: EndBossRaidDto) {}
+  async endBossRaid(endBossRaidDto: EndBossRaidDto) {
+    const currentTime = new Date();
+    const { raidRecordId, userId } = endBossRaidDto;
+
+    let bossRaidsStaticData: BosRaidsStaticData;
+    try {
+      bossRaidsStaticData = await this.cacheManager.get('bossRaidsStaticData');
+      console.log('bossRaidsStaticData');
+      console.log(bossRaidsStaticData);
+    } catch (err) {
+      throw new InternalServerErrorException(
+        'Faild to read Boss Raids Static Data.',
+      );
+    }
+
+    // 유효성 검사 - 저장된 userId 와 raidRecordId 일치 여부 확인
+    const history = await this.bossRaidHistoryRepository.findOne({
+      where: { raidRecordId },
+      relations: ['user'],
+    });
+
+    // 존재하지 않는 raidRecordId일 경우 예외처리
+    if (!history) {
+      throw new NotFoundException(
+        `Boss Raid History (id: ${raidRecordId}) not found.`,
+      );
+    }
+
+    // raid history에 저장된 userID와 raidRecordId가 match 되지 않는 경우 예외처리
+    if (history.user.id !== userId) {
+      throw new BadRequestException('User does not match.');
+    }
+
+    // 시작한 시간으로부터 레이드 제한시간이 지났다면 예외처리
+    const timeDiff =
+      currentTime.valueOf() - new Date(history.enterTime).valueOf();
+
+    const diffInSeconds = Math.floor(timeDiff / 1000);
+    const bossRaidLimitSeconds = bossRaidsStaticData.bossRaidLimitSeconds;
+    if (diffInSeconds > bossRaidLimitSeconds) {
+      throw new BadRequestException(
+        'The duration of requested game exeeds limit seconds.',
+      );
+    }
+
+    // TODO: 레이드 level에 따른 score 반영
+    const score = await this.getScoreByLevel(
+      history.level,
+      bossRaidsStaticData.levels,
+    );
+
+    history.score = score;
+    history.endTime = currentTime;
+
+    await this.bossRaidHistoryRepository.save(history);
+  }
+
+  /**
+   * Redis에 저장되어 있는 Boss Raid Static Data에서 각 level에 해당하는 score를 찾아 반환합니다.
+   * @param level score를 알고자 하는 level
+   * @param levels level별 score 값을 저장하고 있는 object
+   * @returns score
+   */
+  private async getScoreByLevel(
+    level: number,
+    levels: Level[],
+  ): Promise<number> {
+    for (let i = 0; i < levels.length; i++) {
+      if (levels[i].level === level) {
+        return levels[i].score;
+      }
+    }
+  }
 
   findOne(id: number) {
     return `This action returns a #${id} bossRaidHistory`;
