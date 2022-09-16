@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { CacheModule, Module } from '@nestjs/common';
+import * as redisCacheStore from 'cache-manager-ioredis';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
 import { AppController } from './app.controller';
@@ -7,6 +8,14 @@ import { DatabaseModule } from './database/database.module';
 
 @Module({
   imports: [
+    CacheModule.register({
+      isGlobal: true,
+      store: redisCacheStore,
+      clusterConfig: {
+        nodes: [{ host: 'localhost', port: 6379 }],
+        options: { ttl: 10 },
+      },
+    }),
     ConfigModule.forRoot({
       envFilePath: `.${process.env.NODE_ENV}.env`,
       validationSchema: Joi.object({
