@@ -7,5 +7,5 @@ export class User {
   id: number;
 
   @OneToMany(() => BossRaidHistory, (bossRaidHistory) => bossRaidHistory.user)
-  bossRaidHistories: BossRaidHistory[];
+  bossRaidHistory: BossRaidHistory[];
 }

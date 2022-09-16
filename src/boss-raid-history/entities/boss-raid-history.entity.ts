@@ -10,7 +10,7 @@ import {
 @Entity()
 export class BossRaidHistory {
   @PrimaryGeneratedColumn()
-  id: number;
+  raidRecordId: number;
 
   @Column({
     type: 'int',
@@ -39,7 +39,7 @@ export class BossRaidHistory {
   })
   level: number;
 
-  @ManyToOne(() => User, (user) => user.bossRaidHistories)
+  @ManyToOne(() => User, (user) => user.bossRaidHistory)
   @JoinColumn()
   user: User;
 }
