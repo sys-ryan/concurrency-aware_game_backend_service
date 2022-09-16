@@ -1,11 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { BossRaidHistoryService } from './boss-raid-history.service';
 import { CreateBossRaidHistoryDto } from './dto/create-boss-raid-history.dto';
+import { EnterBossRaidDto } from './dto/enter-boss-raid.dto';
+import { GetBossRaidStatusResponseDto } from './dto/get-boss-raid-status.dto';
 import { UpdateBossRaidHistoryDto } from './dto/update-boss-raid-history.dto';
 
-@Controller('boss-raid-history')
+@Controller('bossRaid')
 export class BossRaidHistoryController {
-  constructor(private readonly bossRaidHistoryService: BossRaidHistoryService) {}
+  constructor(
+    private readonly bossRaidHistoryService: BossRaidHistoryService,
+  ) {}
 
   @Post()
   create(@Body() createBossRaidHistoryDto: CreateBossRaidHistoryDto) {
@@ -13,8 +25,13 @@ export class BossRaidHistoryController {
   }
 
   @Get()
-  findAll() {
-    return this.bossRaidHistoryService.findAll();
+  getBossRaidStatus(): Promise<Partial<GetBossRaidStatusResponseDto>> {
+    return this.bossRaidHistoryService.getBossRaidStatus();
+  }
+
+  @Post('enter')
+  enterBossRaid(@Body() enterBossRaidDto: EnterBossRaidDto) {
+    return this.bossRaidHistoryService.enterBossRaid(enterBossRaidDto);
   }
 
   @Get(':id')
@@ -23,7 +40,10 @@ export class BossRaidHistoryController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBossRaidHistoryDto: UpdateBossRaidHistoryDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateBossRaidHistoryDto: UpdateBossRaidHistoryDto,
+  ) {
     return this.bossRaidHistoryService.update(+id, updateBossRaidHistoryDto);
   }
 
