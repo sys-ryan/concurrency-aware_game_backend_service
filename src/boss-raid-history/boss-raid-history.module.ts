@@ -4,6 +4,6 @@ import { BossRaidHistoryController } from './boss-raid-history.controller';
 
 @Module({
   controllers: [BossRaidHistoryController],
-  providers: [BossRaidHistoryService]
+  providers: [BossRaidHistoryService],
 })
 export class BossRaidHistoryModule {}
