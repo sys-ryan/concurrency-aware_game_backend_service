@@ -4,6 +4,7 @@ import { Cache } from 'cache-manager';
 import { UserService } from 'src/user/user.service';
 import { DataSource, Repository } from 'typeorm';
 import { CreateBossRaidHistoryDto } from './dto/create-boss-raid-history.dto';
+import { EndBossRaidDto } from './dto/end-boss-raid.dto';
 import { EnterBossRaidDto } from './dto/enter-boss-raid.dto';
 import { UpdateBossRaidHistoryDto } from './dto/update-boss-raid-history.dto';
 import { BossRaidAvailability } from './entities/boss-raid-availability.entity';
@@ -34,10 +35,6 @@ export class BossRaidHistoryService {
 
     if (!bossRaidAvailability) {
       // 아무도 보스레이드를 시작한 기록이 없다면 시작 가능합니다.
-      await this.bossRaidAvailabilityRepository.save({
-        canEnter: true,
-      });
-
       response = {
         canEnter: true,
       };
@@ -83,6 +80,7 @@ export class BossRaidHistoryService {
       await this.bossRaidAvailabilityRepository.find()
     )[0];
 
+    console.log('bossRaidAvailability', bossRaidAvailability);
     console.log(user);
 
     let canEnter: boolean;
@@ -96,6 +94,9 @@ export class BossRaidHistoryService {
         userId: user.id,
       });
       await this.bossRaidAvailabilityRepository.save(bossRaidAvailability);
+      userId = user.id;
+      console.log('!bossRaidAvailability');
+      console.log(userId);
       isAvailable = true;
     } else {
       const {
@@ -154,6 +155,8 @@ export class BossRaidHistoryService {
       raidRecordId: history.raidRecordId,
     };
   }
+
+  async endBossRaid(endBossRaidDto: EndBossRaidDto) {}
 
   findOne(id: number) {
     return `This action returns a #${id} bossRaidHistory`;
