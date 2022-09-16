@@ -25,7 +25,7 @@ export class BossRaidHistoryController {
   }
 
   @Get()
-  getBossRaidStatus(): Promise<Partial<GetBossRaidStatusResponseDto>> {
+  getBossRaidStatus() {
     return this.bossRaidHistoryService.getBossRaidStatus();
   }
 
