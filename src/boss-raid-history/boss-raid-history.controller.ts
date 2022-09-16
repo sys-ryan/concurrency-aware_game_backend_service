@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { BossRaidHistoryService } from './boss-raid-history.service';
 import { CreateBossRaidHistoryDto } from './dto/create-boss-raid-history.dto';
+import { EndBossRaidDto } from './dto/end-boss-raid.dto';
 import { EnterBossRaidDto } from './dto/enter-boss-raid.dto';
 import { GetBossRaidStatusResponseDto } from './dto/get-boss-raid-status.dto';
 import { UpdateBossRaidHistoryDto } from './dto/update-boss-raid-history.dto';
@@ -32,6 +33,11 @@ export class BossRaidHistoryController {
   @Post('enter')
   enterBossRaid(@Body() enterBossRaidDto: EnterBossRaidDto) {
     return this.bossRaidHistoryService.enterBossRaid(enterBossRaidDto);
+  }
+
+  @Patch('end')
+  endBossRaid(@Body() endBossRaidDto: EndBossRaidDto) {
+    return this.bossRaidHistoryService.endBossRaid(endBossRaidDto);
   }
 
   @Get(':id')
