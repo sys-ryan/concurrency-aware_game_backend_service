@@ -12,13 +12,17 @@ import { Cache } from 'cache-manager';
 import { UserService } from 'src/user/user.service';
 import { DataSource, Repository } from 'typeorm';
 import { EndBossRaidDto } from './dto/end-boss-raid.dto';
-import { EnterBossRaidDto } from './dto/enter-boss-raid.dto';
+import {
+  EnterBossRaidDto,
+  EnterBossRaidResponseDto,
+} from './dto/enter-boss-raid.dto';
 import { BossRaidAvailability } from './entities/boss-raid-availability.entity';
 import { BossRaidHistory } from './entities/boss-raid-history.entity';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { GetRankingInfoListDto } from './dto/get-ranking-info.dto';
 import { RankingInfo } from 'src/common/types';
+import { GetBossRaidStatusResponseDto } from './dto/get-boss-raid-status.dto';
 
 export interface Level {
   level: number;
@@ -31,8 +35,13 @@ export interface BosRaidsStaticData {
 }
 
 export interface RankingData {
-  topRankingInfoList: RankingInfo[];
+  topRankerInfoList: RankingInfo[];
   myRankingInfo: RankingInfo;
+}
+
+export interface TimeInfo {
+  nextAvailableEnterTime: Date;
+  currentTime: Date;
 }
 
 @Injectable()
@@ -69,7 +78,7 @@ export class BossRaidHistoryService implements OnModuleInit {
    * 보스레이드 플레이가 가능한 상태인지 여부를 조회
    * @returns 보스레이드 플레이 가능 여부 (boolean)
    */
-  async getBossRaidStatus() {
+  async getBossRaidStatus(): Promise<Partial<GetBossRaidStatusResponseDto>> {
     const bossRaidAvailability = (
       await this.bossRaidAvailabilityRepository.find()
     )[0];
@@ -110,7 +119,9 @@ export class BossRaidHistoryService implements OnModuleInit {
    * @param enterBossRaidDto 보스레이드 시작 request body
    * @returns { isEntered, raidRecordId }
    */
-  async enterBossRaid(enterBossRaidDto: EnterBossRaidDto) {
+  async enterBossRaid(
+    enterBossRaidDto: EnterBossRaidDto,
+  ): Promise<Partial<EnterBossRaidResponseDto>> {
     // user 유효성 검사
     const user = await this.userService.findById(enterBossRaidDto.userId);
 
@@ -200,7 +211,7 @@ export class BossRaidHistoryService implements OnModuleInit {
    * 추가로 게임 종료 후 랭킹 데이터를 업데이트하고 캐시에도 업데이트된 데이터를 가지도록 합니다.
    * @param endBossRaidDto
    */
-  async endBossRaid(endBossRaidDto: EndBossRaidDto) {
+  async endBossRaid(endBossRaidDto: EndBossRaidDto): Promise<void> {
     const currentTime = new Date();
     const { raidRecordId, userId } = endBossRaidDto;
 
@@ -302,7 +313,9 @@ export class BossRaidHistoryService implements OnModuleInit {
    * @param getRankingInfoListDto 조회하고자 하는 user의 userId를 가진 객체
    * @returns 레이드 랭킹 정보
    */
-  async getRankingInfoList(getRankingInfoListDto: GetRankingInfoListDto) {
+  async getRankingInfoList(
+    getRankingInfoListDto: GetRankingInfoListDto,
+  ): Promise<RankingData> {
     const { userId } = getRankingInfoListDto;
     // userId 유효성 검사
     const user = await this.userService.findById(userId);
@@ -333,7 +346,7 @@ export class BossRaidHistoryService implements OnModuleInit {
   /**
    * DB에서 각 유저의 점수 합에 따른 랭킹 정보를 조회하여 반환합니다.
    */
-  private async calculateRankingData() {
+  private async calculateRankingData(): Promise<RankingInfo[]> {
     let result = await this.dataSource
       .getRepository(BossRaidHistory)
       .createQueryBuilder('history')
@@ -360,7 +373,7 @@ export class BossRaidHistoryService implements OnModuleInit {
    * @param lastEnterTime 마지막 레이드 입장 시간
    * @returns { 다음 레이드 시작 가능 시간, 현재 시간 }
    */
-  async getTimeInfo(lastEnterTime: Date) {
+  async getTimeInfo(lastEnterTime: Date): Promise<TimeInfo> {
     const nextAvailableEnterTime = new Date(lastEnterTime);
 
     const bossRaidLimitSeconds = await this.getBossRaidLimitSecondsFromCache();
@@ -373,7 +386,7 @@ export class BossRaidHistoryService implements OnModuleInit {
     return { nextAvailableEnterTime, currentTime };
   }
 
-  private async getLevelsFromCache() {
+  private async getLevelsFromCache(): Promise<number[]> {
     const data = await this.cacheManager.get<BosRaidsStaticData>(
       'bossRaidsStaticData',
     );
@@ -381,7 +394,7 @@ export class BossRaidHistoryService implements OnModuleInit {
     return levels;
   }
 
-  private async getBossRaidLimitSecondsFromCache() {
+  private async getBossRaidLimitSecondsFromCache(): Promise<number> {
     const data = await this.cacheManager.get<BosRaidsStaticData>(
       'bossRaidsStaticData',
     );
