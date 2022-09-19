@@ -314,7 +314,6 @@ export class BossRaidHistoryService implements OnModuleInit {
 
     // 캐시된 데이터 없을 시 데이터 데이터 생성 및 캐싱
     if (!topRankerInfoList) {
-      // TODO: 동점자 랭킹 처리
       topRankerInfoList = await this.calculateRankingData();
       await this.cacheManager.set('topRankerInfoList', topRankerInfoList);
     }
@@ -341,7 +340,7 @@ export class BossRaidHistoryService implements OnModuleInit {
       .select('history.userId')
       .addSelect('SUM(history.score)', 'totalScore')
       .addSelect(
-        'ROW_NUMBER () OVER (ORDER BY SUM(history.score) DESC) - 1 as "ranking"',
+        'RANK() OVER (ORDER BY SUM(history.score) DESC) - 1 as "ranking"',
       )
       .groupBy('history.userId')
       .getRawMany();
@@ -350,7 +349,7 @@ export class BossRaidHistoryService implements OnModuleInit {
     result = result.map((r) => ({
       userId: r.userId,
       totalScore: +r.totalScore,
-      rankin: +r.ranking,
+      ranking: +r.ranking,
     }));
 
     return result;
