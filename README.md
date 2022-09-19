@@ -9,8 +9,8 @@
 | [5. 서비스 배포](#서비스-배포)     | service url 및 배포 화면               |
 
 보스레이드(Boss Raid) PVE 컨텐츠 관련 기능을 제공하는 백엔드 서비스입니다. `레이드(Raid)`란 비디오 게임에서 미션의 한 종류로 다수의 플레이어가 다수의 NPC(Non Player Character)를 상대로 공격하여 승리하는 것을 말합니다. 본 서비스에서 제공하는 기능으로는 `유저 생성`, `유저 조회`, `보스레이드 상태 조회`, `보스레이드 시작/종료`, `랭킹 조회`가 있습니다.  
-한 번에 한 명의 유저만 보스레이드를 진행할 수 있다는 제약 조건을 만족시키기 위해 `동시성(Concurrency)`을 고려하여 서비스를 구현하였습니다(`Database Lock` 사용).  
-또한 static 데이터 또는, 일정 시간동안 변하지 않는 데이터(ex. ranking)에 대한 요청을 효율적으로 처리하기 위해 이러한 요청에 대한 응답을 `레디스(Redis)에 캐싱` 하여 응답하도록 구현하였습니다.
+- 한 번에 한 명의 유저만 보스레이드를 진행할 수 있다는 제약 조건을 만족시키기 위해 `동시성(Concurrency)`을 고려하여 서비스를 구현하였습니다(`Database Lock` 사용).  
+- 또한 static 데이터 또는, 일정 시간동안 변하지 않는 데이터(ex. ranking)에 대한 요청을 효율적으로 처리하기 위해 이러한 요청에 대한 응답을 `레디스(Redis)에 캐싱` 하여 응답하도록 구현하였습니다.
 
 # 요구사항 분석
 
@@ -83,9 +83,8 @@ swagger를 사용하여 제작한 API Docs
 
 > 데이터베이스는 AWS RDS - mysql로 생성했습니다.
 
-// TODO: 모델링 이미지 첨부
+<img width="779" alt="스크린샷 2022-09-19 오후 10 16 07" src="https://user-images.githubusercontent.com/63445753/191026524-7e05a72a-3506-4648-8fe3-1be609404c25.png">
 
-<!-- ![shopping-mall-management-backend-service (3)](https://user-images.githubusercontent.com/63445753/190066303-454ee49f-1a00-4df9-a167-6827ba18a37e.png) -->
 
 ### 폴더 구조
 
@@ -114,8 +113,6 @@ concurrency-aware-game-backend-service/
 - test: e2e 테스트
 
 ## 작업 내역
-
-// TODO: 작업 내역 추가
 
 ✔️ 서버 초기 세팅
 ✔️ Redis 세팅
