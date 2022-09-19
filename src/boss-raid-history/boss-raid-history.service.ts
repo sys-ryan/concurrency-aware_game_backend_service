@@ -19,14 +19,22 @@ import { BossRaidAvailability } from './entities/boss-raid-availability.entity';
 import { BossRaidHistory } from './entities/boss-raid-history.entity';
 import { HttpService } from '@nestjs/axios';
 import { endWith, lastValueFrom } from 'rxjs';
+import { GetRankingInfoListDto } from './dto/get-ranking-info.dto';
+import { RankingInfo } from 'src/common/types';
 
 export interface Level {
   level: number;
   score: number;
 }
+
 export interface BosRaidsStaticData {
   bossRaidLimitSeconds: number;
   levels: Level[];
+}
+
+export interface RankingData {
+  topRankingInfoList: RankingInfo[];
+  myRankingInfo: RankingInfo;
 }
 
 @Injectable()
@@ -236,6 +244,20 @@ export class BossRaidHistoryService implements OnModuleInit {
     history.endTime = currentTime;
 
     await this.bossRaidHistoryRepository.save(history);
+
+    // TODO: boss raid status update (availability)
+    // TODO: BossRaidAvailablity -> can enter 1로 (with lock)
+    await this.dataSource
+      .getRepository(BossRaidAvailability)
+      .createQueryBuilder('av')
+      .setLock('pessimistic_read')
+      .update(BossRaidAvailability)
+      .set({
+        canEnter: true,
+      })
+      .where('userId = :userId', { userId })
+      // .select('av.userId')
+      .execute();
   }
 
   /**
@@ -254,6 +276,37 @@ export class BossRaidHistoryService implements OnModuleInit {
       }
     }
   }
+
+  async getRankingInfoList(getRankingInfoListDto: GetRankingInfoListDto) {
+    //   const { userId } = getRankingInfoListDto;
+    //   // 캐시된 랭킹 데이터 조회
+    //   const rankingData: RankingData = await this.cacheManager.get('rankingData');
+    //   // TODO: 캐시된 데이터 없을 시 데이터 데이터 생성 및 캐싱
+    //   if (!rankingData) {
+    //     return this.calculateRankingData();
+    //   }
+    //   // TODO: 캐시된 데이터 있을 시 데이터 format
+  }
+
+  // private async calculateRankingData() {
+  //   const result = await this.dataSource
+  //     .getRepository(BossRaidHistory)
+  //     .createQueryBuilder('history')
+  //     .select('history.userId')
+  //     .addSelect('SUM(history.score)', 'totalScore')
+  //     .addSelect(
+  //       'ROW_NUMBER () OVER (ORDER BY SUM(history.score) DESC) - 1 as "ranking"',
+  //     )
+  //     .groupBy('history.userId')
+  //     .getRawMany();
+
+  //   // result = result.map((r) => ({
+  //   //   userId: r.userId,
+  //   //   totalScore: +r.totalScore,
+  //   // }));
+
+  //   console.log(result);
+  // }
 
   findOne(id: number) {
     return `This action returns a #${id} bossRaidHistory`;
