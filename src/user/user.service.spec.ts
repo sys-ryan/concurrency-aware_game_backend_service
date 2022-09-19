@@ -45,7 +45,6 @@ describe('UserService', () => {
 
   it('유저 생성 기능', async () => {
     const user = await service.create();
-    console.log(user);
     expect(user).toBeDefined();
   });
 
