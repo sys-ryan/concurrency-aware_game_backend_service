@@ -11,10 +11,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
 import { UserService } from 'src/user/user.service';
 import { DataSource, Repository } from 'typeorm';
-import { CreateBossRaidHistoryDto } from './dto/create-boss-raid-history.dto';
 import { EndBossRaidDto } from './dto/end-boss-raid.dto';
 import { EnterBossRaidDto } from './dto/enter-boss-raid.dto';
-import { UpdateBossRaidHistoryDto } from './dto/update-boss-raid-history.dto';
 import { BossRaidAvailability } from './entities/boss-raid-availability.entity';
 import { BossRaidHistory } from './entities/boss-raid-history.entity';
 import { HttpService } from '@nestjs/axios';
@@ -67,10 +65,10 @@ export class BossRaidHistoryService implements OnModuleInit {
     }
   }
 
-  create(createBossRaidHistoryDto: CreateBossRaidHistoryDto) {
-    return 'This action adds a new bossRaidHistory';
-  }
-
+  /**
+   * 보스레이드 플레이가 가능한 상태인지 여부를 조회
+   * @returns 보스레이드 플레이 가능 여부 (boolean)
+   */
   async getBossRaidStatus() {
     const bossRaidAvailability = (
       await this.bossRaidAvailabilityRepository.find()
@@ -92,10 +90,8 @@ export class BossRaidHistoryService implements OnModuleInit {
     const { nextAvailableEnterTime, currentTime } =
       this.getTimeInfo(lastEnterTime);
 
-    // 입장 불가능
+    // 입장 가능 여부
     const isAvailable = canEnter || currentTime > nextAvailableEnterTime;
-    // const isGameNotFinished =
-    //   canEnter === false || currentTime < nextAvailableEnterTime;
     if (isAvailable) {
       return {
         canEnter: true,
@@ -108,10 +104,15 @@ export class BossRaidHistoryService implements OnModuleInit {
     };
   }
 
+  /**
+   * 보스레이드에 시작 가능 여부를 체크하고 가능하다면 보스레이드에 입장하면서 availability 갱신, history 생성
+   * @param enterBossRaidDto 보스레이드 시작 request body
+   * @returns { isEntered, raidRecordId }
+   */
   async enterBossRaid(enterBossRaidDto: EnterBossRaidDto) {
     // user 유효성 검사
     const user = await this.userService.findById(enterBossRaidDto.userId);
-
+    console.log('enterBossRaid, userId', user.id);
     // TODO : level 유효성 검사
 
     let bossRaidAvailability = (
@@ -151,24 +152,23 @@ export class BossRaidHistoryService implements OnModuleInit {
     }
 
     // 입장 조건 위배
-    // 레이드 시작이 불가하다면 isEntered: false
     if (!isAvailable) {
+      // 레이드 시작이 불가하다면 isEntered: false
       return {
         isEntered: false,
       };
     }
 
-    console.log('userid', userId);
-    // 유저 입장 (동시성 고려 lock)
+    // 유저 입장 (동시성 고려하여 DB lock)
     const currentTime = new Date();
     await this.dataSource
       .getRepository(BossRaidAvailability)
       .createQueryBuilder('boss_raid_availability')
-      .setLock('pessimistic_read')
+      .setLock('pessimistic_read') // LOCK
       .update(BossRaidAvailability)
       .set({
         canEnter: false,
-        userId,
+        userId: user.id,
         enteredAt: currentTime,
       })
       .where('id = :id', { id: bossRaidAvailability.id })
@@ -179,7 +179,7 @@ export class BossRaidHistoryService implements OnModuleInit {
       user,
       enterTime: new Date(currentTime),
       level: enterBossRaidDto.level,
-      score: 0,
+      score: 0, // end 할 때 업데이트 될 것임.
     });
     await this.bossRaidHistoryRepository.save(history);
 
@@ -189,15 +189,19 @@ export class BossRaidHistoryService implements OnModuleInit {
     };
   }
 
+  /**
+   * 보스레이드를 종료하면서 레이드 level에 따른 score 반영하고 endTime 과 함께 history를 업데이트 합니다.
+   * 추가로 게임 종료 후 랭킹 데이터를 업데이트하고 캐시에도 업데이트된 데이터를 가지도록 합니다.
+   * @param endBossRaidDto
+   */
   async endBossRaid(endBossRaidDto: EndBossRaidDto) {
     const currentTime = new Date();
     const { raidRecordId, userId } = endBossRaidDto;
 
     let bossRaidsStaticData: BosRaidsStaticData;
     try {
+      // level에 따른 score 반영을 위해 캐시에서 boss raid static data get
       bossRaidsStaticData = await this.cacheManager.get('bossRaidsStaticData');
-      console.log('bossRaidsStaticData');
-      console.log(bossRaidsStaticData);
     } catch (err) {
       throw new InternalServerErrorException(
         'Faild to read Boss Raids Static Data.',
@@ -222,6 +226,11 @@ export class BossRaidHistoryService implements OnModuleInit {
       throw new BadRequestException('User does not match.');
     }
 
+    // 이미 종료된 레이드일 경우 예외 처리
+    if (history.endTime) {
+      throw new BadRequestException('This raid was already finished');
+    }
+
     // 시작한 시간으로부터 레이드 제한시간이 지났다면 예외처리
     const timeDiff =
       currentTime.valueOf() - new Date(history.enterTime).valueOf();
@@ -234,7 +243,7 @@ export class BossRaidHistoryService implements OnModuleInit {
       );
     }
 
-    // TODO: 레이드 level에 따른 score 반영
+    // 레이드 level에 따른 score 반영
     const score = await this.getScoreByLevel(
       history.level,
       bossRaidsStaticData.levels,
@@ -335,10 +344,6 @@ export class BossRaidHistoryService implements OnModuleInit {
 
   findOne(id: number) {
     return `This action returns a #${id} bossRaidHistory`;
-  }
-
-  update(id: number, updateBossRaidHistoryDto: UpdateBossRaidHistoryDto) {
-    return `This action updates a #${id} bossRaidHistory`;
   }
 
   remove(id: number) {
