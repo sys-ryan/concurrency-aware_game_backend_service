@@ -114,15 +114,15 @@ concurrency-aware-game-backend-service/
 
 ## 작업 내역
 
-✔️ 서버 초기 세팅
-✔️ Redis 세팅
-✔️ User 기능 구현
-✔️ Boss Raid 기눙 구현
-✔️ Swagger API Documentation
-✔️ Readme.md 작성
-⭐️ Unit test 수행 // TODO
-⭐️ e2e test 수행 // TODO
-⭐️ 배포 // TODO
+✔️ 서버 초기 세팅  
+✔️ Redis 세팅  
+✔️ User 기능 구현  
+✔️ Boss Raid 기눙 구현  
+✔️ Swagger API Documentation  
+✔️ Readme.md 작성  
+⭐️ Unit test 수행 // TODO  
+⭐️ e2e test 수행 // TODO  
+⭐️ 배포 // TODO  
 
 # 테스트
 
