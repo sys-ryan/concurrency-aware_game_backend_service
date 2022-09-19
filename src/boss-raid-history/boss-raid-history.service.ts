@@ -87,8 +87,9 @@ export class BossRaidHistoryService implements OnModuleInit {
       enteredAt: lastEnterTime,
     } = bossRaidAvailability;
 
-    const { nextAvailableEnterTime, currentTime } =
-      this.getTimeInfo(lastEnterTime);
+    const { nextAvailableEnterTime, currentTime } = await this.getTimeInfo(
+      lastEnterTime,
+    );
 
     // 입장 가능 여부
     const isAvailable = canEnter || currentTime > nextAvailableEnterTime;
@@ -112,8 +113,12 @@ export class BossRaidHistoryService implements OnModuleInit {
   async enterBossRaid(enterBossRaidDto: EnterBossRaidDto) {
     // user 유효성 검사
     const user = await this.userService.findById(enterBossRaidDto.userId);
-    console.log('enterBossRaid, userId', user.id);
-    // TODO : level 유효성 검사
+
+    // level 유효성 검사
+    const levelsList = await this.getLevelsFromCache();
+    if (!levelsList.includes(enterBossRaidDto.level)) {
+      throw new BadRequestException('Wrong level.');
+    }
 
     let bossRaidAvailability = (
       await this.bossRaidAvailabilityRepository.find()
@@ -142,8 +147,9 @@ export class BossRaidHistoryService implements OnModuleInit {
       canEnter = _canEnter;
       userId = enteredUserId;
 
-      const { nextAvailableEnterTime, currentTime } =
-        this.getTimeInfo(lastEnterTime);
+      const { nextAvailableEnterTime, currentTime } = await this.getTimeInfo(
+        lastEnterTime,
+      );
 
       // 입장 가능 조건
       // - 시작한 기록이 있다면 마지막으로 시작한 유저가 보스레이드를 종료했거나,
@@ -291,6 +297,11 @@ export class BossRaidHistoryService implements OnModuleInit {
     }
   }
 
+  /**
+   * 전체 레이드 랭킹 정보와 userId에 해당하는 랭킹 정보를 캐시에서 조회합니다.
+   * @param getRankingInfoListDto 조회하고자 하는 user의 userId를 가진 객체
+   * @returns 레이드 랭킹 정보
+   */
   async getRankingInfoList(getRankingInfoListDto: GetRankingInfoListDto) {
     const { userId } = getRankingInfoListDto;
     // userId 유효성 검사
@@ -320,6 +331,9 @@ export class BossRaidHistoryService implements OnModuleInit {
     };
   }
 
+  /**
+   * DB에서 각 유저의 점수 합에 따른 랭킹 정보를 조회하여 반환합니다.
+   */
   private async calculateRankingData() {
     let result = await this.dataSource
       .getRepository(BossRaidHistory)
@@ -342,21 +356,37 @@ export class BossRaidHistoryService implements OnModuleInit {
     return result;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} bossRaidHistory`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} bossRaidHistory`;
-  }
-
-  getTimeInfo(lastEnterTime: Date) {
+  /**
+   * 마지막 레이드 입장 시간을 기준으로 레이드 만료 시간을 계산하여 다음 레이드 시작 가능 시간을 반환합니다
+   * @param lastEnterTime 마지막 레이드 입장 시간
+   * @returns { 다음 레이드 시작 가능 시간, 현재 시간 }
+   */
+  async getTimeInfo(lastEnterTime: Date) {
     const nextAvailableEnterTime = new Date(lastEnterTime);
-    // TODO : 3을 변수로 바꾸기
-    nextAvailableEnterTime.setMinutes(nextAvailableEnterTime.getMinutes() + 3);
+
+    const bossRaidLimitSeconds = await this.getBossRaidLimitSecondsFromCache();
+    nextAvailableEnterTime.setSeconds(
+      nextAvailableEnterTime.getSeconds() + bossRaidLimitSeconds,
+    );
 
     const currentTime = new Date();
 
     return { nextAvailableEnterTime, currentTime };
+  }
+
+  private async getLevelsFromCache() {
+    const data = await this.cacheManager.get<BosRaidsStaticData>(
+      'bossRaidsStaticData',
+    );
+    const levels = data.levels.map((l) => l.level);
+    return levels;
+  }
+
+  private async getBossRaidLimitSecondsFromCache() {
+    const data = await this.cacheManager.get<BosRaidsStaticData>(
+      'bossRaidsStaticData',
+    );
+
+    return data.bossRaidLimitSeconds;
   }
 }
