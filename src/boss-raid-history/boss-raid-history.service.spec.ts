@@ -39,7 +39,22 @@ const mockCacheManager = () => ({
   })),
 });
 
-const mockBossRaidHistoryRepository = () => ({});
+const mockBossRaidHistoryRepository = () => ({
+  findOne: jest.fn().mockImplementation(async (query) => {
+    const where = query.where;
+
+    let existingHistory: BossRaidHistory;
+
+    if (where.raidRecordId) {
+      existingHistory = bossRaidHistories.find(
+        (history) => history.raidRecordId === where.raidRecordId,
+      );
+    }
+
+    return existingHistory;
+  }),
+  save: jest.fn(),
+});
 
 const mockBossRaidAvailabilityRepository = () => ({
   find: jest.fn().mockImplementation(() => {
@@ -181,12 +196,72 @@ describe('BossRaidHistoryService', () => {
   });
 
   describe('보스레이드 종료', () => {
-    it('', async () => {});
+    it('저장된 userId와 raidRecordId에 해당하는 user 불일치일 경우 예외처리', async () => {
+      bossRaidHistories.push({
+        raidRecordId: 1,
+        level: 0,
+        user: { id: 1, bossRaidHistory: [] },
+        enterTime: new Date(),
+        endTime: null,
+        score: 0,
+      });
 
-    it('', async () => {});
+      await expect(
+        service.endBossRaid({ raidRecordId: 1, userId: 999 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
 
-    it('', async () => {});
+    it('존재하지 않는 raidRecordId일 경우 예외처리', async () => {
+      bossRaidHistories.push({
+        raidRecordId: 1,
+        level: 0,
+        user: { id: 1, bossRaidHistory: [] },
+        enterTime: new Date(),
+        endTime: null,
+        score: 0,
+      });
 
-    it('', async () => {});
+      await expect(
+        service.endBossRaid({ raidRecordId: 999, userId: 1 }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('이미 종료된 레이드일 경우 예외처리', async () => {
+      users.push({ id: 1, bossRaidHistory: [] });
+
+      bossRaidHistories.push({
+        raidRecordId: 1,
+        level: 0,
+        user: { id: 1, bossRaidHistory: [] },
+        enterTime: new Date(),
+        endTime: new Date(),
+        score: 0,
+      });
+
+      await expect(
+        service.endBossRaid({ raidRecordId: 1, userId: 1 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('시작한 시간으로부터 레이드 제한시간이 지났다면 예외처리', async () => {
+      users.push({ id: 1, bossRaidHistory: [] });
+
+      const endTime = new Date();
+      const bossRaidLimitSeconds = 180;
+
+      endTime.setSeconds(endTime.getSeconds() - (bossRaidLimitSeconds + 60));
+      bossRaidHistories.push({
+        raidRecordId: 1,
+        level: 0,
+        user: { id: 1, bossRaidHistory: [] },
+        enterTime: new Date(),
+        endTime,
+        score: 0,
+      });
+
+      await expect(
+        service.endBossRaid({ raidRecordId: 1, userId: 1 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
   });
 });
