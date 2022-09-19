@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
-import { UserService } from 'src/user/user.service';
+import { UserService } from '../user/user.service';
 import { DataSource, Repository } from 'typeorm';
 import { EndBossRaidDto } from './dto/end-boss-raid.dto';
 import {
@@ -21,7 +21,7 @@ import { BossRaidHistory } from './entities/boss-raid-history.entity';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { GetRankingInfoListDto } from './dto/get-ranking-info.dto';
-import { RankingInfo } from 'src/common/types';
+import { RankingInfo } from '../common/types';
 import { GetBossRaidStatusResponseDto } from './dto/get-boss-raid-status.dto';
 
 export interface Level {

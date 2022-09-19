@@ -8,8 +8,9 @@
 | [4. 테스트](#테스트)               | 각 서비스 unit test / e2e test         |
 | [5. 서비스 배포](#서비스-배포)     | service url 및 배포 화면               |
 
-보스레이드(Boss Raid) PVE 컨텐츠 관련 기능을 제공하는 백엔드 서비스입니다. `레이드(Raid)`란 비디오 게임에서 미션의 한 종류로 다수의 플레이어가 다수의 NPC(Non Player Character)를 상대로 공격하여 승리하는 것을 말합니다. 본 서비스에서 제공하는 기능으로는 `유저 생성`, `유저 조회`, `보스레이드 상태 조회`, `보스레이드 시작/종료`, `랭킹 조회`가 있습니다.  
-- 한 번에 한 명의 유저만 보스레이드를 진행할 수 있다는 제약 조건을 만족시키기 위해 `동시성(Concurrency)`을 고려하여 서비스를 구현하였습니다(`Database Lock` 사용).  
+보스레이드(Boss Raid) PVE 컨텐츠 관련 기능을 제공하는 백엔드 서비스입니다. `레이드(Raid)`란 비디오 게임에서 미션의 한 종류로 다수의 플레이어가 다수의 NPC(Non Player Character)를 상대로 공격하여 승리하는 것을 말합니다. 본 서비스에서 제공하는 기능으로는 `유저 생성`, `유저 조회`, `보스레이드 상태 조회`, `보스레이드 시작/종료`, `랭킹 조회`가 있습니다.
+
+- 한 번에 한 명의 유저만 보스레이드를 진행할 수 있다는 제약 조건을 만족시키기 위해 `동시성(Concurrency)`을 고려하여 서비스를 구현하였습니다(`Database Lock` 사용).
 - 또한 static 데이터 또는, 일정 시간동안 변하지 않는 데이터(ex. ranking)에 대한 요청을 효율적으로 처리하기 위해 이러한 요청에 대한 응답을 `레디스(Redis)에 캐싱` 하여 응답하도록 구현하였습니다.
 
 # 요구사항 분석
@@ -85,7 +86,6 @@ swagger를 사용하여 제작한 API Docs
 
 <img width="779" alt="스크린샷 2022-09-19 오후 10 16 07" src="https://user-images.githubusercontent.com/63445753/191026524-7e05a72a-3506-4648-8fe3-1be609404c25.png">
 
-
 ### 폴더 구조
 
 ```
@@ -122,7 +122,7 @@ concurrency-aware-game-backend-service/
 ✔️ Readme.md 작성  
 ⭐️ Unit test 수행 // TODO  
 ⭐️ e2e test 수행 // TODO  
-⭐️ 배포 // TODO  
+⭐️ 배포 // TODO
 
 # 테스트
 
@@ -130,52 +130,34 @@ concurrency-aware-game-backend-service/
 
 ### 테스트 커버리지
 
-// TODO: 테스트 커버리지 추가
+#### User Service
 
-<!--
-#### Orders Service (주문)
+- 유저 생성 기능
+- 유저 생성기 고유한 id 생성
 
-- 주문 생성 기능 검증
-- 주문 목록 조회 기능 검증
-- 주문 조회 기증 검증
-- 주문 상태 변경 기능 검증
+### BossRaid Service
 
-#### Deliveries Service (배송)
+- 보스레이드 상태 조회
 
-- 주문 발송 처리(배송 정보 생성) 기능 검증
-- 배송 상태 업데이트 (배송 중, 배송 완료) 기능 검증
-- 배송 목록 조회 기능 검증
+  - 보스레이드를 시작한 기록이 없다면 canEnter: true
+  - 보스레이드를 플레이중인 유저가 있다면 canEnter: false
+  - 시작한 시간으로부터 레이드 제한 시간 만큼 경과되었으면 canEnter: true
 
-#### Coupons Service (쿠폰)
+- 보스레이드 입장
 
-쿠폰 타입
+  - 존재하지 않는 userId 로 요청시 예외 처리
+  - 존재하지 않는 level 로 요청시 예외 처리
+  - canEnter: false 일 때 입장 요청시 isEntered: false (입장 거부)
 
-- 쿠폰 타입 생성 기능 검증
-
-쿠폰
-
-- 쿠폰 코드 발급 기능 검증
-- 사용 처리 기능 검증 (이미 사용되었을 경우 throws exception)
-- 사용 처리 기능 검증 (쿠폰이 만료되었을 경우 throws exception)
-- 사용 처리 기능 검증 (존재하지 않는 쿠폰 코드를 사용하는 경우 throws exception) -->
+- 보스레이드 종료
+  - 저장된 userId와 raidRecordId에 해당하는 user 불일치일 경우 예외처리
+  - 존재하지 않는 raidRecordId일 경우 예외처리
+  - 이미 종료된 레이드일 경우 예외 처리
+  - 시작한 시간으로부터 레이드 제한시간이 지났다면 예외처리
 
 ### 테스트 결과
 
 // TODO: 테스트 결과 추가
-
-<!-- #### Orders Service (주문)
-
-<img width="838" alt="스크린샷 2022-09-14 오후 11 37 30" src="https://user-images.githubusercontent.com/63445753/190185588-5a630325-5ab0-42e9-b630-a93234dca155.png">
-
-#### Deliveries Service (배송)
-
-<img width="834" alt="스크린샷 2022-09-14 오후 11 37 56" src="https://user-images.githubusercontent.com/63445753/190185626-ff7c5226-c393-484c-8335-7e2d1af9465c.png">
-
-#### Coupons Service (쿠폰)
-
-<img width="744" alt="스크린샷 2022-09-14 오후 11 39 44" src="https://user-images.githubusercontent.com/63445753/190185685-f0d67a20-0840-4b7e-bb47-5f7e67cc5b2f.png">
-
-<img width="909" alt="스크린샷 2022-09-14 오후 11 39 06" src="https://user-images.githubusercontent.com/63445753/190185706-d3a9c85c-51d9-497e-8ef0-23407bf87408.png"> -->
 
 ## e2e Test
 
