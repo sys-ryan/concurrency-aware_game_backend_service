@@ -12,6 +12,7 @@ import { CreateBossRaidHistoryDto } from './dto/create-boss-raid-history.dto';
 import { EndBossRaidDto } from './dto/end-boss-raid.dto';
 import { EnterBossRaidDto } from './dto/enter-boss-raid.dto';
 import { GetBossRaidStatusResponseDto } from './dto/get-boss-raid-status.dto';
+import { GetRankingInfoListDto } from './dto/get-ranking-info.dto';
 import { UpdateBossRaidHistoryDto } from './dto/update-boss-raid-history.dto';
 
 @Controller('bossRaid')
@@ -28,6 +29,13 @@ export class BossRaidHistoryController {
   @Get()
   getBossRaidStatus() {
     return this.bossRaidHistoryService.getBossRaidStatus();
+  }
+
+  @Get('topRankerList')
+  getRankingInfoList(@Body() getRankingInfoListDto: GetRankingInfoListDto) {
+    return this.bossRaidHistoryService.getRankingInfoList(
+      getRankingInfoListDto,
+    );
   }
 
   @Post('enter')
