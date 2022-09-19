@@ -30,7 +30,10 @@ export interface Level {
 }
 
 export interface BosRaidsStaticData {
+  // 제한 시간 (sec)
   bossRaidLimitSeconds: number;
+
+  //레벨 별 레이드 처치 점수
   levels: Level[];
 }
 
