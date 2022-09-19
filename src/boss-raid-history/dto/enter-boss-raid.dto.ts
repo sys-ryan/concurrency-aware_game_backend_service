@@ -12,3 +12,12 @@ export class EnterBossRaidDto {
   @Min(0)
   level: number;
 }
+
+/**
+ * 보스레이드 시작 response
+ */
+export class EnterBossRaidResponseDto {
+  isEntered: boolean;
+
+  raidRecordId: number;
+}
