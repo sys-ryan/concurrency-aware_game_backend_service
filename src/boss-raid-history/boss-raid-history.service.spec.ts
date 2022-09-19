@@ -6,11 +6,18 @@ import { BossRaidHistory } from './entities/boss-raid-history.entity';
 import { DataSource } from 'typeorm';
 import { UserService } from '../user/user.service';
 import { HttpService } from '@nestjs/axios';
-import { CACHE_MANAGER } from '@nestjs/common';
+import {
+  BadRequestException,
+  CACHE_MANAGER,
+  NotFoundException,
+} from '@nestjs/common';
+import { User } from 'src/user/entities/user.entity';
 
 const bossRaidHistories: BossRaidHistory[] = [];
 
 const bossRaidAvailability: BossRaidAvailability[] = [];
+
+const users: User[] = [];
 
 const mockCacheManager = () => ({
   get: jest.fn().mockImplementation(() => ({
@@ -42,7 +49,15 @@ const mockBossRaidAvailabilityRepository = () => ({
 
 const mockDataSource = () => ({});
 
-const mockUserService = () => ({});
+const mockUserService = () => ({
+  findById: jest.fn().mockImplementation(async (id: number) => {
+    const user = users.find((u) => u.id === id);
+    if (!user) {
+      throw new NotFoundException();
+    }
+    return user;
+  }),
+});
 
 const mockHttpService = () => ({});
 
@@ -86,6 +101,7 @@ describe('BossRaidHistoryService', () => {
   afterEach(async () => {
     bossRaidHistories.splice(0, bossRaidHistories.length);
     bossRaidAvailability.splice(0, bossRaidAvailability.length);
+    users.splice(0, users.length);
   });
 
   it('should be defined', () => {
@@ -133,21 +149,44 @@ describe('BossRaidHistoryService', () => {
     });
   });
 
-  // describe('보스레이드 입장', () => {
-  //   it('존재하지 않는 userId로 요청시 예외 처리', async () => {});
+  describe('보스레이드 입장', () => {
+    it('존재하지 않는 userId로 요청시 예외 처리', async () => {
+      await expect(
+        service.enterBossRaid({ userId: 999, level: 0 }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
 
-  //   it('존재하지 않는 level로 요청시 예외 처리', async () => {});
+    it('존재하지 않는 level로 요청시 예외 처리', async () => {
+      users.push({ id: 1, bossRaidHistory: [] });
+      await expect(
+        service.enterBossRaid({ userId: 1, level: 999 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
 
-  //   it('{canEnter: false}일 때 입장 요청시 {isEntered: false} 반환', async () => {});
-  // });
+    it('{canEnter: false}일 때 입장 요청시 {isEntered: false} 반환', async () => {
+      users.push({ id: 1, bossRaidHistory: [] });
 
-  // describe('보스레이드 종료', () => {
-  //   it('', async () => {});
+      bossRaidAvailability.push({
+        id: 1,
+        canEnter: false,
+        enteredAt: new Date(),
+        userId: 1,
+      });
 
-  //   it('', async () => {});
+      const response = await service.enterBossRaid({ userId: 1, level: 0 });
 
-  //   it('', async () => {});
+      expect(response).toBeDefined();
+      expect(response.isEntered).toBe(false);
+    });
+  });
 
-  //   it('', async () => {});
-  // });
+  describe('보스레이드 종료', () => {
+    it('', async () => {});
+
+    it('', async () => {});
+
+    it('', async () => {});
+
+    it('', async () => {});
+  });
 });
