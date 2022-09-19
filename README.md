@@ -157,7 +157,13 @@ concurrency-aware-game-backend-service/
 
 ### 테스트 결과
 
-// TODO: 테스트 결과 추가
+#### User Service 
+
+<img width="612" alt="스크린샷 2022-09-20 오전 3 10 18" src="https://user-images.githubusercontent.com/63445753/191086872-20c622bf-706f-4055-b32b-4b8f1738d4dc.png">
+
+#### BossRaid Service
+
+<img width="876" alt="스크린샷 2022-09-20 오전 3 09 55" src="https://user-images.githubusercontent.com/63445753/191086911-f041a4da-95bc-4854-bc67-06ab05caeb4e.png">
 
 ## e2e Test
 
