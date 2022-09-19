@@ -18,7 +18,7 @@ import { UpdateBossRaidHistoryDto } from './dto/update-boss-raid-history.dto';
 import { BossRaidAvailability } from './entities/boss-raid-availability.entity';
 import { BossRaidHistory } from './entities/boss-raid-history.entity';
 import { HttpService } from '@nestjs/axios';
-import { endWith, lastValueFrom } from 'rxjs';
+import { lastValueFrom } from 'rxjs';
 import { GetRankingInfoListDto } from './dto/get-ranking-info.dto';
 import { RankingInfo } from 'src/common/types';
 
@@ -245,8 +245,8 @@ export class BossRaidHistoryService implements OnModuleInit {
 
     await this.bossRaidHistoryRepository.save(history);
 
-    // TODO: boss raid status update (availability)
-    // TODO: BossRaidAvailablity -> can enter 1로 (with lock)
+    // boss raid status update (availability)
+    // BossRaidAvailablity -> can enter 1로 (with lock)
     await this.dataSource
       .getRepository(BossRaidAvailability)
       .createQueryBuilder('av')
@@ -256,8 +256,13 @@ export class BossRaidHistoryService implements OnModuleInit {
         canEnter: true,
       })
       .where('userId = :userId', { userId })
-      // .select('av.userId')
       .execute();
+
+    // 랭킹 데이터 DB 업데이트
+    const topRankerInfoList = await this.calculateRankingData(); // 게임 종료 후 업데이트된 history반영한 랭킹 정보 get
+
+    // 캐시에 업데이트된 랭킹 정보 set
+    await this.cacheManager.set('topRankerInfoList', topRankerInfoList);
   }
 
   /**
@@ -278,35 +283,55 @@ export class BossRaidHistoryService implements OnModuleInit {
   }
 
   async getRankingInfoList(getRankingInfoListDto: GetRankingInfoListDto) {
-    //   const { userId } = getRankingInfoListDto;
-    //   // 캐시된 랭킹 데이터 조회
-    //   const rankingData: RankingData = await this.cacheManager.get('rankingData');
-    //   // TODO: 캐시된 데이터 없을 시 데이터 데이터 생성 및 캐싱
-    //   if (!rankingData) {
-    //     return this.calculateRankingData();
-    //   }
-    //   // TODO: 캐시된 데이터 있을 시 데이터 format
+    const { userId } = getRankingInfoListDto;
+    // userId 유효성 검사
+    const user = await this.userService.findById(userId);
+
+    // 캐시된 랭킹 데이터 조회
+    let topRankerInfoList: RankingInfo[] = await this.cacheManager.get(
+      'topRankerInfoList',
+    );
+
+    // 캐시된 데이터 없을 시 데이터 데이터 생성 및 캐싱
+    if (!topRankerInfoList) {
+      // TODO: 동점자 랭킹 처리
+      topRankerInfoList = await this.calculateRankingData();
+      await this.cacheManager.set('topRankerInfoList', topRankerInfoList);
+    }
+
+    // my ranking info 검색
+    const myRankingInfo: RankingInfo = topRankerInfoList.find(
+      (info) => info.userId === userId,
+    );
+
+    // 캐시된 데이터 있을 시 데이터 format후 return
+    return {
+      topRankerInfoList,
+      myRankingInfo,
+    };
   }
 
-  // private async calculateRankingData() {
-  //   const result = await this.dataSource
-  //     .getRepository(BossRaidHistory)
-  //     .createQueryBuilder('history')
-  //     .select('history.userId')
-  //     .addSelect('SUM(history.score)', 'totalScore')
-  //     .addSelect(
-  //       'ROW_NUMBER () OVER (ORDER BY SUM(history.score) DESC) - 1 as "ranking"',
-  //     )
-  //     .groupBy('history.userId')
-  //     .getRawMany();
+  private async calculateRankingData() {
+    let result = await this.dataSource
+      .getRepository(BossRaidHistory)
+      .createQueryBuilder('history')
+      .select('history.userId')
+      .addSelect('SUM(history.score)', 'totalScore')
+      .addSelect(
+        'ROW_NUMBER () OVER (ORDER BY SUM(history.score) DESC) - 1 as "ranking"',
+      )
+      .groupBy('history.userId')
+      .getRawMany();
 
-  //   // result = result.map((r) => ({
-  //   //   userId: r.userId,
-  //   //   totalScore: +r.totalScore,
-  //   // }));
+    // format ranking data
+    result = result.map((r) => ({
+      userId: r.userId,
+      totalScore: +r.totalScore,
+      rankin: +r.ranking,
+    }));
 
-  //   console.log(result);
-  // }
+    return result;
+  }
 
   findOne(id: number) {
     return `This action returns a #${id} bossRaidHistory`;
