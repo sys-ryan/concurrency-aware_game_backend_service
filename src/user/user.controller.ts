@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { FindUserResponseDto } from './dto/find-user.dto';
 
+@ApiTags('User API')
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
