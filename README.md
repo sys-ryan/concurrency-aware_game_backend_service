@@ -46,7 +46,7 @@
   - 레이드 시작 가능하다면 중복되지 않는 raidRecordId를 생성하여 `isEntered: true`와 함께 응답
   - 레이드 시작이 불가능하다면 `isEntered: false`
 - 보스레이드 종료
-  - API : `PATCH bossRaid/end`
+  - API : `PATCH /bossRaid/end`
   - raidRecordId 종료 처리
     - 레이드 level에 따른 score 반영
   - 유효성 검사
