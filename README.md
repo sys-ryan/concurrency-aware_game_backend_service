@@ -68,7 +68,7 @@
 
 swagger를 사용하여 제작한 API Docs
 
-[👉 Swagger Docs 바로가기]() //TODO: 주소 추가
+[👉 Swagger Docs 바로가기](https://app.swaggerhub.com/apis-docs/sys-ryan/concurreny-aware_boss_raid_pve_contents_backend_service/1#/BossRaid%20API/BossRaidHistoryController_getBossRaidStatus)   
 
 # 구현 과정
 
