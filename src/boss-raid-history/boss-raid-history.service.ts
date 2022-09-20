@@ -16,7 +16,6 @@ import {
   EnterBossRaidDto,
   EnterBossRaidResponseDto,
 } from './dto/enter-boss-raid.dto';
-import { BossRaidAvailability } from './entities/boss-raid-availability.entity';
 import { BossRaidHistory } from './entities/boss-raid-history.entity';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
@@ -24,9 +23,17 @@ import { GetRankingInfoListDto } from './dto/get-ranking-info.dto';
 import { RankingInfo } from '../common/types';
 import { GetBossRaidStatusResponseDto } from './dto/get-boss-raid-status.dto';
 
+import { redlock } from '../redis/redlock';
+
 export interface Level {
   level: number;
   score: number;
+}
+
+export interface BossRaidAvailability {
+  userId: number;
+  canEnter: boolean;
+  enteredAt: Date;
 }
 
 export interface BosRaidsStaticData {
@@ -53,8 +60,6 @@ export class BossRaidHistoryService implements OnModuleInit {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     @InjectRepository(BossRaidHistory)
     private bossRaidHistoryRepository: Repository<BossRaidHistory>,
-    @InjectRepository(BossRaidAvailability)
-    private bossRaidAvailabilityRepository: Repository<BossRaidAvailability>,
     private dataSource: DataSource,
     private userService: UserService,
     private httpService: HttpService,
@@ -75,6 +80,9 @@ export class BossRaidHistoryService implements OnModuleInit {
         'Failed to fetch BossRaid Static Data.',
       );
     }
+
+    // 모듈 마운트 시 보스레이드 상태 캐시정보 clear
+    await this.cacheManager.del('bossRaidAvailability');
   }
 
   /**
@@ -82,9 +90,8 @@ export class BossRaidHistoryService implements OnModuleInit {
    * @returns 보스레이드 플레이 가능 여부 (boolean)
    */
   async getBossRaidStatus(): Promise<Partial<GetBossRaidStatusResponseDto>> {
-    const bossRaidAvailability = (
-      await this.bossRaidAvailabilityRepository.find()
-    )[0];
+    const bossRaidAvailability =
+      await this.cacheManager.get<BossRaidAvailability>('bossRaidAvailability');
 
     if (!bossRaidAvailability) {
       // 아무도 보스레이드를 시작한 기록이 없다면 시작 가능합니다.
@@ -134,79 +141,75 @@ export class BossRaidHistoryService implements OnModuleInit {
       throw new BadRequestException('Wrong level.');
     }
 
-    let bossRaidAvailability = (
-      await this.bossRaidAvailabilityRepository.find()
-    )[0];
+    try {
+      const lock = await redlock.acquire(['bossRaidLock'], 5000);
 
-    let canEnter: boolean;
-    let isAvailable: boolean;
-    let userId: number;
-    if (!bossRaidAvailability) {
-      // 입장 가능 조건
-      // - 아무도 보스레이드를 시작한 기록이 없다면 시작 가능
-      bossRaidAvailability = await this.bossRaidAvailabilityRepository.create({
-        canEnter: true,
-        userId: user.id,
+      const bossRaidAvailability =
+        await this.cacheManager.get<BossRaidAvailability>(
+          'bossRaidAvailability',
+        );
+
+      let canEnter: boolean;
+      let isAvailable: boolean;
+
+      if (!bossRaidAvailability) {
+        // 입장 가능 조건
+        // - 아무도 보스레이드를 시작한 기록이 없다면 시작 가능
+        await this.cacheManager.set('bossRaidAvailability', {
+          canEnter: false,
+          userId: user.id,
+          enteredAt: new Date(),
+        });
+
+        isAvailable = true;
+      } else {
+        const {
+          userId,
+          canEnter: _canEnter,
+          enteredAt: lastEnterTime,
+        } = bossRaidAvailability;
+
+        canEnter = _canEnter;
+
+        const { nextAvailableEnterTime, currentTime } = await this.getTimeInfo(
+          lastEnterTime,
+        );
+
+        // 입장 가능 조건
+        // - 시작한 기록이 있다면 마지막으로 시작한 유저가 보스레이드를 종료했거나,
+        //    시작한 시간으로부터 레이드 제한 시간 만큼 경과되었어야 함
+        isAvailable = canEnter || currentTime > nextAvailableEnterTime;
+      }
+
+      // 입장 조건 위배
+      if (!isAvailable) {
+        await lock.release();
+        // 레이드 시작이 불가하다면 isEntered: false
+        return {
+          isEntered: false,
+        };
+      }
+
+      // boss raid history 생성
+      const currentTime = new Date();
+      const history = await this.bossRaidHistoryRepository.create({
+        user,
+        enterTime: new Date(currentTime),
+        level: enterBossRaidDto.level,
+        score: 0, // end 할 때 업데이트 될 것임.
       });
-      await this.bossRaidAvailabilityRepository.save(bossRaidAvailability);
-      userId = user.id;
-      isAvailable = true;
-    } else {
-      const {
-        userId: enteredUserId,
-        canEnter: _canEnter,
-        enteredAt: lastEnterTime,
-      } = bossRaidAvailability;
+      await this.bossRaidHistoryRepository.save(history);
 
-      canEnter = _canEnter;
-      userId = enteredUserId;
+      await lock.release();
 
-      const { nextAvailableEnterTime, currentTime } = await this.getTimeInfo(
-        lastEnterTime,
-      );
-
-      // 입장 가능 조건
-      // - 시작한 기록이 있다면 마지막으로 시작한 유저가 보스레이드를 종료했거나,
-      //    시작한 시간으로부터 레이드 제한 시간 만큼 경과되었어야 함
-      isAvailable = canEnter || currentTime > nextAvailableEnterTime;
-    }
-
-    // 입장 조건 위배
-    if (!isAvailable) {
-      // 레이드 시작이 불가하다면 isEntered: false
       return {
-        isEntered: false,
+        isEntered: true,
+        raidRecordId: history.raidRecordId,
       };
+    } catch (err) {
+      console.error(err);
+      throw new InternalServerErrorException('Cache error.');
     }
-
-    // 유저 입장 (동시성 고려하여 DB lock)
-    const currentTime = new Date();
-    await this.dataSource
-      .getRepository(BossRaidAvailability)
-      .createQueryBuilder('boss_raid_availability')
-      .setLock('pessimistic_read') // LOCK
-      .update(BossRaidAvailability)
-      .set({
-        canEnter: false,
-        userId: user.id,
-        enteredAt: currentTime,
-      })
-      .where('id = :id', { id: bossRaidAvailability.id })
-      .execute();
-
-    // boss raid history 생성
-    const history = await this.bossRaidHistoryRepository.create({
-      user,
-      enterTime: new Date(currentTime),
-      level: enterBossRaidDto.level,
-      score: 0, // end 할 때 업데이트 될 것임.
-    });
-    await this.bossRaidHistoryRepository.save(history);
-
-    return {
-      isEntered: true,
-      raidRecordId: history.raidRecordId,
-    };
   }
 
   /**
@@ -275,17 +278,16 @@ export class BossRaidHistoryService implements OnModuleInit {
     await this.bossRaidHistoryRepository.save(history);
 
     // boss raid status update (availability)
-    // BossRaidAvailablity -> can enter 1로 (with lock)
-    await this.dataSource
-      .getRepository(BossRaidAvailability)
-      .createQueryBuilder('av')
-      .setLock('pessimistic_read')
-      .update(BossRaidAvailability)
-      .set({
-        canEnter: true,
-      })
-      .where('userId = :userId', { userId })
-      .execute();
+    // canEnter: true 로 변경
+    const lock = await redlock.acquire(['bossRaidLock'], 5000);
+
+    await this.cacheManager.set('bossRaidAvailability', {
+      canEnter: true,
+      userId: null,
+      enteredAt: null,
+    });
+
+    await lock.release();
 
     // 랭킹 데이터 DB 업데이트
     const topRankerInfoList = await this.calculateRankingData(); // 게임 종료 후 업데이트된 history반영한 랭킹 정보 get
@@ -321,7 +323,7 @@ export class BossRaidHistoryService implements OnModuleInit {
   ): Promise<RankingData> {
     const { userId } = getRankingInfoListDto;
     // userId 유효성 검사
-    const user = await this.userService.findById(userId);
+    await this.userService.findById(userId);
 
     // 캐시된 랭킹 데이터 조회
     let topRankerInfoList: RankingInfo[] = await this.cacheManager.get(
