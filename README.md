@@ -84,7 +84,8 @@ swagger를 사용하여 제작한 API Docs
 
 > 데이터베이스는 AWS RDS - mysql로 생성했습니다.
 
-<img width="779" alt="스크린샷 2022-09-19 오후 10 16 07" src="https://user-images.githubusercontent.com/63445753/191026524-7e05a72a-3506-4648-8fe3-1be609404c25.png">
+<img width="686" alt="스크린샷 2022-09-20 오후 9 12 23" src="https://user-images.githubusercontent.com/63445753/191254477-2d574932-966b-4349-bb12-d383e3f20358.png">
+
 
 ### 폴더 구조
 
@@ -120,7 +121,7 @@ concurrency-aware-game-backend-service/
 ✔️ Boss Raid 기눙 구현  
 ✔️ Swagger API Documentation  
 ✔️ Readme.md 작성  
-⭐️ Unit test 수행 // TODO  
+⭐️ Unit test 수행  
 ⭐️ e2e test 수행 // TODO  
 ⭐️ 배포 // TODO
 
