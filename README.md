@@ -123,7 +123,7 @@ concurrency-aware-game-backend-service/
 ✔️ Readme.md 작성  
 ⭐️ Unit test 수행  
 ⭐️ e2e test 수행 // TODO  
-⭐️ 배포 // TODO
+⭐️ 배포 
 
 # 테스트
 
@@ -201,6 +201,15 @@ concurrency-aware-game-backend-service/
 
 # 서비스 배포
 
-// TODO: 서비스 배포 주소 추가
+NestJS Server: `AWS EC2`  
+Redis Cluster: `Docker`  
+Database: `AWS RDS: Mysql`
 
-// TODO: 서비스 배포 캡쳐 추가
+### EC2 배포 화면 
+<img width="1678" alt="스크린샷 2022-09-20 오후 11 22 52" src="https://user-images.githubusercontent.com/63445753/191285347-6f68f229-69e6-4c5d-b126-78defcff4921.png">
+
+### 서버 SSH 접속 화면  
+<img width="1548" alt="스크린샷 2022-09-20 오후 11 26 26" src="https://user-images.githubusercontent.com/63445753/191285483-d4d99874-cd22-4599-a719-4ec3dfaa1684.png">
+
+### 보스레이드 상태조회 결과 화면
+<img width="1678" alt="스크린샷 2022-09-20 오후 11 27 05" src="https://user-images.githubusercontent.com/63445753/191285577-fe9ec233-733f-456f-9c07-684d2f467b3a.png">
