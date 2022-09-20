@@ -14,7 +14,7 @@ import { BossRaidHistoryModule } from './boss-raid-history/boss-raid-history.mod
       isGlobal: true,
       store: redisCacheStore,
       clusterConfig: {
-        nodes: [{ host: process.env.REDIS_HOST, port: 6379 }],
+        nodes: [{ host: process.env.REDIS_HOST, port: process.env.REDIS_PORT }],
         options: { ttl: 0 },
       },
     }),
