@@ -10,7 +10,7 @@
 
 보스레이드(Boss Raid) PVE 컨텐츠 관련 기능을 제공하는 백엔드 서비스입니다. `레이드(Raid)`란 비디오 게임에서 미션의 한 종류로 다수의 플레이어가 다수의 NPC(Non Player Character)를 상대로 공격하여 승리하는 것을 말합니다. 본 서비스에서 제공하는 기능으로는 `유저 생성`, `유저 조회`, `보스레이드 상태 조회`, `보스레이드 시작/종료`, `랭킹 조회`가 있습니다.
 
-- 한 번에 한 명의 유저만 보스레이드를 진행할 수 있다는 제약 조건을 만족시키기 위해 `동시성(Concurrency)`을 고려하여 서비스를 구현하였습니다(`Database Lock` 사용).
+- 한 번에 한 명의 유저만 보스레이드를 진행할 수 있다는 제약 조건을 만족시키기 위해 `동시성(Concurrency)`을 고려하여 서비스를 구현하였습니다([Distributed Locks with Redis](https://redis.io/docs/reference/patterns/distributed-locks/) 사용).
 - 또한 static 데이터 또는, 일정 시간동안 변하지 않는 데이터(ex. ranking)에 대한 요청을 효율적으로 처리하기 위해 이러한 요청에 대한 응답을 `레디스(Redis)에 캐싱` 하여 응답하도록 구현하였습니다.
 
 # 요구사항 분석
@@ -84,7 +84,8 @@ swagger를 사용하여 제작한 API Docs
 
 > 데이터베이스는 AWS RDS - mysql로 생성했습니다.
 
-<img width="779" alt="스크린샷 2022-09-19 오후 10 16 07" src="https://user-images.githubusercontent.com/63445753/191026524-7e05a72a-3506-4648-8fe3-1be609404c25.png">
+<img width="686" alt="스크린샷 2022-09-20 오후 9 12 23" src="https://user-images.githubusercontent.com/63445753/191254477-2d574932-966b-4349-bb12-d383e3f20358.png">
+
 
 ### 폴더 구조
 
@@ -120,7 +121,7 @@ concurrency-aware-game-backend-service/
 ✔️ Boss Raid 기눙 구현  
 ✔️ Swagger API Documentation  
 ✔️ Readme.md 작성  
-⭐️ Unit test 수행 // TODO  
+⭐️ Unit test 수행  
 ⭐️ e2e test 수행 // TODO  
 ⭐️ 배포 // TODO
 
@@ -157,7 +158,13 @@ concurrency-aware-game-backend-service/
 
 ### 테스트 결과
 
-// TODO: 테스트 결과 추가
+#### User Service 
+
+<img width="612" alt="스크린샷 2022-09-20 오전 3 10 18" src="https://user-images.githubusercontent.com/63445753/191086872-20c622bf-706f-4055-b32b-4b8f1738d4dc.png">
+
+#### BossRaid Service
+
+<img width="876" alt="스크린샷 2022-09-20 오전 3 09 55" src="https://user-images.githubusercontent.com/63445753/191086911-f041a4da-95bc-4854-bc67-06ab05caeb4e.png">
 
 ## e2e Test
 
