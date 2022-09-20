@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BossRaidHistoryService } from './boss-raid-history.service';
-import { BossRaidAvailability } from './entities/boss-raid-availability.entity';
+import {
+  BossRaidAvailability,
+  BossRaidHistoryService,
+} from './boss-raid-history.service';
 import { BossRaidHistory } from './entities/boss-raid-history.entity';
 import { DataSource } from 'typeorm';
 import { UserService } from '../user/user.service';
@@ -15,28 +17,36 @@ import { User } from 'src/user/entities/user.entity';
 
 const bossRaidHistories: BossRaidHistory[] = [];
 
-const bossRaidAvailability: BossRaidAvailability[] = [];
+let bossRaidAvailability: BossRaidAvailability;
 
 const users: User[] = [];
 
 const mockCacheManager = () => ({
-  get: jest.fn().mockImplementation(() => ({
-    bossRaidLimitSeconds: 180,
-    levels: [
-      {
-        level: 0,
-        score: 20,
-      },
-      {
-        level: 1,
-        score: 47,
-      },
-      {
-        level: 2,
-        score: 85,
-      },
-    ],
-  })),
+  get: jest.fn().mockImplementation((key) => {
+    if (key === 'bossRaidAvailability') {
+      return bossRaidAvailability;
+    }
+
+    if (key === 'bossRaidsStaticData') {
+      return {
+        bossRaidLimitSeconds: 180,
+        levels: [
+          {
+            level: 0,
+            score: 20,
+          },
+          {
+            level: 1,
+            score: 47,
+          },
+          {
+            level: 2,
+            score: 85,
+          },
+        ],
+      };
+    }
+  }),
 });
 
 const mockBossRaidHistoryRepository = () => ({
@@ -54,12 +64,6 @@ const mockBossRaidHistoryRepository = () => ({
     return existingHistory;
   }),
   save: jest.fn(),
-});
-
-const mockBossRaidAvailabilityRepository = () => ({
-  find: jest.fn().mockImplementation(() => {
-    return bossRaidAvailability;
-  }),
 });
 
 const mockDataSource = () => ({});
@@ -88,10 +92,6 @@ describe('BossRaidHistoryService', () => {
           useValue: mockBossRaidHistoryRepository(),
         },
         {
-          provide: getRepositoryToken(BossRaidAvailability),
-          useValue: mockBossRaidAvailabilityRepository(),
-        },
-        {
           provide: CACHE_MANAGER,
           useValue: mockCacheManager(),
         },
@@ -115,7 +115,7 @@ describe('BossRaidHistoryService', () => {
 
   afterEach(async () => {
     bossRaidHistories.splice(0, bossRaidHistories.length);
-    bossRaidAvailability.splice(0, bossRaidAvailability.length);
+    bossRaidAvailability = null;
     users.splice(0, users.length);
   });
 
@@ -132,12 +132,11 @@ describe('BossRaidHistoryService', () => {
     });
 
     it('보스레이드를 플레이중인 유저가 있다면 {canEnter: false} 반환', async () => {
-      bossRaidAvailability.push({
+      bossRaidAvailability = {
         canEnter: false,
         enteredAt: new Date(),
-        id: 1,
         userId: 1,
-      });
+      };
 
       const status = await service.getBossRaidStatus();
 
@@ -150,12 +149,11 @@ describe('BossRaidHistoryService', () => {
       const date = new Date();
       date.setMinutes(date.getMinutes() - 4);
 
-      bossRaidAvailability.push({
+      bossRaidAvailability = {
         canEnter: false,
         enteredAt: date,
-        id: 1,
         userId: 1,
-      });
+      };
 
       const status = await service.getBossRaidStatus();
 
@@ -181,12 +179,11 @@ describe('BossRaidHistoryService', () => {
     it('{canEnter: false}일 때 입장 요청시 {isEntered: false} 반환', async () => {
       users.push({ id: 1, bossRaidHistory: [] });
 
-      bossRaidAvailability.push({
-        id: 1,
+      bossRaidAvailability = {
         canEnter: false,
         enteredAt: new Date(),
         userId: 1,
-      });
+      };
 
       const response = await service.enterBossRaid({ userId: 1, level: 0 });
 
