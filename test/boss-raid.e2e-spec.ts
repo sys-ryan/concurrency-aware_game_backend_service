@@ -99,5 +99,14 @@ describe('BossRaid (e2e)', () => {
     });
   });
 
-  describe('랭킹', () => {});
+  describe('랭킹', () => {
+    it('랭킹 정보 조회 서버 응답값 검증', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/bossRaid/topRankerList')
+        .send({ userId: user.userId - 1 });
+
+      const myRankingInfo = response.body.myRankingInfo;
+      expect(myRankingInfo.userId).toEqual(user.userId - 1);
+    });
+  });
 });
