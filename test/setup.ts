@@ -1,6 +1,7 @@
 import * as mysql from 'mysql2';
 import * as dotenv from 'dotenv';
 import { join } from 'path';
+import { redis } from '../src/redis/redlock';
 
 dotenv.config({ path: join(__dirname, '..', '.test.env') });
 
@@ -12,13 +13,17 @@ const con = mysql.createConnection({
   database: process.env.DB_NAME,
 });
 
-global.beforeEach(async () => {
+global.afterAll(async () => {
+  redis.del('topRankerInfoList');
+
   con.connect((err) => {
     if (err) {
+      console.log(err);
       throw err;
     }
+
+    con.query('DELETE FROM boss_raid_history');
     con.query('DELETE FROM user');
-    // con.query('DELETE FROM coupons');
     // con.query('DELETE FROM coupon_types');
   });
 });
