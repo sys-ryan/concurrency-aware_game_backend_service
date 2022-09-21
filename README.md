@@ -167,7 +167,6 @@ concurrency-aware-game-backend-service/
 <img width="876" alt="스크린샷 2022-09-20 오전 3 09 55" src="https://user-images.githubusercontent.com/63445753/191086911-f041a4da-95bc-4854-bc67-06ab05caeb4e.png">
 
 ## e2e Test
-<img width="862" alt="스크린샷 2022-09-21 오후 3 39 17" src="https://user-images.githubusercontent.com/63445753/191446041-ef183766-c72a-4cc6-a819-a30b2cf9c4b0.png">
 
 ### 테스트 커버리지
 
