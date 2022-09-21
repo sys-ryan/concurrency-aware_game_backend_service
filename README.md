@@ -200,9 +200,18 @@ concurrency-aware-game-backend-service/
 
 # 서비스 배포
 
-NestJS Server: `AWS EC2`  
-Redis Cluster: `Docker`  
-Database: `AWS RDS: Mysql`
+NestJS Server: <img
+      src="https://img.shields.io/badge/AWS EC2-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white"
+    />  
+Redis Cluster: <img
+      src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"
+    />  
+Database: <img
+      src="https://img.shields.io/badge/Amazon RDS-FF9900?style=for-the-badge&logo=amazonrds&logoColor=white"
+    />
+    <img
+      src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white"
+    />  
 
 ### EC2 배포 화면 
 <img width="1678" alt="스크린샷 2022-09-20 오후 11 22 52" src="https://user-images.githubusercontent.com/63445753/191448074-a365c14a-d83c-4f4f-b009-842ea696ad5b.png">
