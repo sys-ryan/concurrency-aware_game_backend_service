@@ -337,9 +337,13 @@ export class BossRaidHistoryService implements OnModuleInit {
     }
 
     // my ranking info 검색
-    const myRankingInfo: RankingInfo = topRankerInfoList.find(
+    let myRankingInfo: RankingInfo = topRankerInfoList.find(
       (info) => info.userId === userId,
     );
+
+    if (!myRankingInfo) {
+      myRankingInfo = null;
+    }
 
     // 캐시된 데이터 있을 시 데이터 format후 return
     return {
