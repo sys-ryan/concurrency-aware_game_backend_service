@@ -17,7 +17,7 @@ global.beforeEach(async () => {
     if (err) {
       throw err;
     }
-    // con.query('DELETE FROM orders ORDER BY id DESC LIMIT 1');
+    con.query('DELETE FROM user');
     // con.query('DELETE FROM coupons');
     // con.query('DELETE FROM coupon_types');
   });
