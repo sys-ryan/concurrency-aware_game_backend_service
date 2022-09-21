@@ -122,7 +122,7 @@ concurrency-aware-game-backend-service/
 ✔️ Swagger API Documentation  
 ✔️ Readme.md 작성  
 ⭐️ Unit test 수행  
-⭐️ e2e test 수행 // TODO  
+⭐️ e2e test 수행  
 ⭐️ 배포 
 
 # 테스트
@@ -167,37 +167,25 @@ concurrency-aware-game-backend-service/
 <img width="876" alt="스크린샷 2022-09-20 오전 3 09 55" src="https://user-images.githubusercontent.com/63445753/191086911-f041a4da-95bc-4854-bc67-06ab05caeb4e.png">
 
 ## e2e Test
+<img width="862" alt="스크린샷 2022-09-21 오후 3 39 17" src="https://user-images.githubusercontent.com/63445753/191446041-ef183766-c72a-4cc6-a819-a30b2cf9c4b0.png">
 
 ### 테스트 커버리지
 
-// TODO: 테스트 커버리지 추가
+#### 보스레이드
 
-<!-- #### 주문 내역
+- 보스레이드 입장 성공시 서버 응답값 검증
+- 보스레이드 입장 실패시 서버 응답값 검증
+- 보스레이드 종료시 level에 따른 score 반영 검증
 
-- 주문 내역 열람 기능 검증
-- 주문 내역 검색 기능 검증 (by 주문 상태)
-- 주문 내역 검색 기능 검증 (by 시작일자, 종료일자)
-- 주문 내역 검색 기능 검증 (by 주문자 명)
-- 주문 내역 검색 기능 검증 (by 국가코드)
+#### 랭킹
 
-#### 쿠폰
-
-- 쿠폰 타입 목록 조회 기능 검증 (쿠폰 타입별 사용 횟수, 쿠폰 타입별 총 할인액 정보를 포함해야 함)
-- 쿠폰 사용에 따른 할인 적용 기능 검증 (배송비 할인) // == 구매 내역 추가 테스트
-- 쿠폰 사용에 따른 할인 적용 기능 검증 (상품 가격 정액 할인) // == 구매 내역 추가 테스트
-- 쿠폰 사용에 따른 할인 적용 기능 검증 (상품 가격 % 할인) // == 구매 내역 추가 테스트 -->
+- 랭킹 정보 조회 서버 응답값 검증
+ 
 
 ### 테스트 결과
 
-// TODO: 테스트 결과 추가
+<img width="862" alt="스크린샷 2022-09-21 오후 3 39 17" src="https://user-images.githubusercontent.com/63445753/191447376-749ee7a4-3f8d-4cf8-8b41-b826f0b3d0d7.png">
 
-<!-- #### 주문 내역
-
-<img width="840" alt="스크린샷 2022-09-14 오후 11 43 41" src="https://user-images.githubusercontent.com/63445753/190187321-838dc96b-1403-4a49-ba2c-da66c4169ba7.png">
-
-#### 쿠폰
-
-<img width="829" alt="스크린샷 2022-09-14 오후 11 47 08" src="https://user-images.githubusercontent.com/63445753/190187435-855d7edc-cdd3-4d89-a65e-d62ed9b39384.png"> -->
 
 # 서비스 배포
 
@@ -206,7 +194,8 @@ Redis Cluster: `Docker`
 Database: `AWS RDS: Mysql`
 
 ### EC2 배포 화면 
-<img width="1678" alt="스크린샷 2022-09-20 오후 11 22 52" src="https://user-images.githubusercontent.com/63445753/191285347-6f68f229-69e6-4c5d-b126-78defcff4921.png">
+<img width="1218" alt="스크린샷 2022-09-21 오후 4 39 47" src="https://user-images.githubusercontent.com/63445753/191445974-6871e18c-5810-4c25-97aa-3ada5b83ed55.png">
+
 
 ### 서버 SSH 접속 화면  
 <img width="1548" alt="스크린샷 2022-09-20 오후 11 26 26" src="https://user-images.githubusercontent.com/63445753/191285483-d4d99874-cd22-4599-a719-4ec3dfaa1684.png">
