@@ -79,6 +79,8 @@ swagger를 사용하여 제작한 API Docs
     />
 - Cache: <img
       src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white"
+    /> <img
+      src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"
     />
 - Database: <img
       src="https://img.shields.io/badge/Amazon RDS-FF9900?style=for-the-badge&logo=amazonrds&logoColor=white"
