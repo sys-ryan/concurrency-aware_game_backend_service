@@ -193,11 +193,11 @@ Redis Cluster: `Docker`
 Database: `AWS RDS: Mysql`
 
 ### EC2 배포 화면 
-<img width="1218" alt="스크린샷 2022-09-21 오후 4 39 47" src="https://user-images.githubusercontent.com/63445753/191445974-6871e18c-5810-4c25-97aa-3ada5b83ed55.png">
+<img width="1678" alt="스크린샷 2022-09-20 오후 11 22 52" src="https://user-images.githubusercontent.com/63445753/191448074-a365c14a-d83c-4f4f-b009-842ea696ad5b.png">
 
 
 ### 서버 SSH 접속 화면  
-<img width="1548" alt="스크린샷 2022-09-20 오후 11 26 26" src="https://user-images.githubusercontent.com/63445753/191285483-d4d99874-cd22-4599-a719-4ec3dfaa1684.png">
+<img width="1218" alt="스크린샷 2022-09-21 오후 4 39 47" src="https://user-images.githubusercontent.com/63445753/191445974-6871e18c-5810-4c25-97aa-3ada5b83ed55.png">
 
 ### 보스레이드 상태조회 결과 화면
 <img width="1678" alt="스크린샷 2022-09-20 오후 11 27 05" src="https://user-images.githubusercontent.com/63445753/191285577-fe9ec233-733f-456f-9c07-684d2f467b3a.png">
